@@ -11,25 +11,37 @@ struct ParsedCommand {
     bool ok = false;
     std::string error;
 
-    // Named string values. Expected keys per command type:
-    //   SELECT: table, whereField, whereOp, whereValue, orderField, limit
-    //   INSERT: table
-    //   CREATE: table
-    //   DROP:   table
+    // Named string values, keyed by slot name. Each command type uses:
+    //
+    //   SELECT: fields["table"]      = table name
+    //           fields["whereField"] = column in WHERE clause
+    //           fields["whereOp"]    = operator (=, >, <, >=, <=, !=)
+    //           fields["whereValue"] = value to compare against
+    //           fields["orderField"] = column in ORDER BY clause
+    //           fields["limit"]      = row limit as a string
+    //           items                = column names being selected (or "*")
+    //
+    //   INSERT: fields["table"]      = table name
+    //           items                = column names
+    //           valueRows            = one vector<string> per VALUES tuple
+    //
+    //   CREATE: fields["table"]      = table name
+    //           typedFields          = (columnName, columnType) pairs
+    //           constraints          = columnName -> "NOT NULL", "PRIMARY KEY",
+    //                                  or "NOT NULL PRIMARY KEY"
+    //
+    //   DROP:   fields["table"]      = table name
+    //
     std::map<std::string, std::string> fields;
 
-    // For SELECT: field list (may include "*"); for INSERT: column names
     std::vector<std::string> items;
 
-    // For CREATE: (columnName, columnType) pairs
     // Note: column types (int, float, varchar, boolean) are tokenized as Keywords
     std::vector<std::pair<std::string, std::string>> typedFields;
 
-    // For CREATE: constraints per column (columnName -> "NOT NULL PRIMARY KEY" etc.)
     // Constraints appear in order: NOT NULL before PRIMARY KEY
     std::map<std::string, std::string> constraints;
 
-    // For INSERT: value rows (each row has one value per column)
     std::vector<std::vector<std::string>> valueRows;
 
     // Helpers for building results inside ParseSequence steps

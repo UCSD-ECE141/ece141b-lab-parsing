@@ -2,11 +2,17 @@
 
 Parse SQL commands. 220 randomized tests. Make them pass.
 
-`DropParser` is provided as an example. Implement `SelectParser`, `InsertParser`, and `CreateParser`.
+## What to do
 
-Use the `ParseSequence` class in `include/ParseSequence.hpp` to describe your grammars declaratively instead of writing manual token-walking loops. You may need to extend `ParseSequence` with your own primitives.
+1. Open `include/Parsers.hpp`. `DropParser` is already implemented as an example. Implement `SelectParser`, `InsertParser`, and `CreateParser`.
+2. For each parser, implement `recognizes()` to check whether the first token matches the command type (e.g., `select`, `insert`, `create`).
+3. For each parser, implement `parse()` using `ParseSequence` to describe the grammar declaratively. Populate the `ParsedCommand` struct with the parsed data.
+4. See `include/Parser.hpp` for the exact fields each command type must populate.
+5. Build and run after each parser to check your progress.
 
-## Commands
+Use the `ParseSequence` class in `include/ParseSequence.hpp` to chain together grammar rules instead of writing manual if/else token-walking loops. You may need to extend `ParseSequence` with your own primitives.
+
+## Commands to support
 
 ```sql
 SELECT * FROM users;
@@ -35,4 +41,9 @@ cmake --build build
 
 ## Files
 
-Edit `include/Parsers.hpp`. You may also add primitives to `include/ParseSequence.hpp`.
+- `include/Parsers.hpp` — your code goes here
+- `include/ParseSequence.hpp` — declarative parsing toolkit (you may add primitives)
+- `include/Parser.hpp` — defines `ParsedCommand` with the fields you need to populate
+- `include/Token.hpp` — token types and helpers
+- `include/Tokenizer.hpp` — splits SQL strings into tokens
+- `include/TestHarness.hpp` — test runner (read-only)
