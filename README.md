@@ -1,7 +1,5 @@
 # SQL Parsing Challenge
 
-Parse SQL commands. 220 randomized tests. Make them pass.
-
 ## What to do
 
 1. Open `include/Parsers.hpp`. `DropParser` is already implemented as an example. Implement `SelectParser`, `InsertParser`, and `CreateParser`.
@@ -29,14 +27,6 @@ CREATE TABLE orders (id int PRIMARY KEY NOT NULL, total float, active boolean);
 
 DROP TABLE users;
 DROP TABLE orders;
-```
-
-## Build and run
-
-```
-cmake -B build
-cmake --build build
-./build/lab-parsing
 ```
 
 ## Files
