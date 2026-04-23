@@ -32,3 +32,5 @@ cmake --build build
 ## Files
 
 Edit `include/Parsers.hpp`. Everything else is provided.
+
+Use the `ParseSequence` class in `include/ParseSequence.hpp` to build your parsers declaratively. You may need to extend it with your own primitives.
