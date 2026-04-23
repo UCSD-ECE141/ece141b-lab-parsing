@@ -3,7 +3,7 @@
 #include <vector>
 #include <functional>
 #include "Tokenizer.hpp"
-#include "ParseResult.hpp"
+#include "Parser.hpp"
 
 namespace lab {
 
@@ -22,6 +22,22 @@ namespace lab {
 //   run(tok, result)     - execute all steps
 //
 // You compose these into grammars. The class knows nothing about SQL.
+//
+// Tokenizer notes:
+//   - "*" is tokenized as Punctuation, not Identifier
+//   - Type names (int, float, varchar, boolean) are tokenized as Keywords
+//   - Operators: =, >, <, >=, <=, !=
+//
+// Example — parsing DROP TABLE <name>;
+//
+//   ParseSequence seq;
+//   seq.expect("drop")
+//      .expect("table")
+//      .captureIf("table", isIdent)
+//      .expectPunct(';');
+//
+//   ParsedCommand cmd{"DROP"};
+//   if (seq.run(tok, cmd)) cmd.ok = true;
 
 class ParseSequence {
 public:
@@ -29,7 +45,7 @@ public:
 
     // Expect a specific keyword. Fails if current token is not that keyword.
     ParseSequence& expect(const std::string& kw) {
-        steps_.push_back([=](Tokenizer& tok, ParseResult& r) -> bool {
+        steps_.push_back([=](Tokenizer& tok, ParsedCommand& r) -> bool {
             if (!tok.more() || !tok.current().isKeyword(kw)) {
                 r.fail("expected '" + kw + "'");
                 return false;
@@ -42,7 +58,7 @@ public:
 
     // Expect a specific punctuation character.
     ParseSequence& expectPunct(char ch) {
-        steps_.push_back([=](Tokenizer& tok, ParseResult& r) -> bool {
+        steps_.push_back([=](Tokenizer& tok, ParsedCommand& r) -> bool {
             if (!tok.more() || !tok.current().isPunct(ch)) {
                 r.fail(std::string("expected '") + ch + "'");
                 return false;
@@ -55,7 +71,7 @@ public:
 
     // Capture current token data into a named slot. Advances.
     ParseSequence& capture(const std::string& slot) {
-        steps_.push_back([=](Tokenizer& tok, ParseResult& r) -> bool {
+        steps_.push_back([=](Tokenizer& tok, ParsedCommand& r) -> bool {
             if (!tok.more()) {
                 r.fail("expected token for '" + slot + "'");
                 return false;
@@ -70,7 +86,7 @@ public:
     // Capture current token into a named slot only if predicate passes.
     ParseSequence& captureIf(const std::string& slot,
                               std::function<bool(const Token&)> pred) {
-        steps_.push_back([=](Tokenizer& tok, ParseResult& r) -> bool {
+        steps_.push_back([=](Tokenizer& tok, ParsedCommand& r) -> bool {
             if (!tok.more() || !pred(tok.current())) {
                 r.fail("predicate failed for '" + slot + "'");
                 return false;
@@ -84,7 +100,7 @@ public:
 
     // Append current token data to items list if predicate passes. Advances.
     ParseSequence& collectIf(std::function<bool(const Token&)> pred) {
-        steps_.push_back([=](Tokenizer& tok, ParseResult& r) -> bool {
+        steps_.push_back([=](Tokenizer& tok, ParsedCommand& r) -> bool {
             if (!tok.more() || !pred(tok.current())) {
                 r.fail("expected matching token");
                 return false;
@@ -98,7 +114,7 @@ public:
 
     // Skip one token unconditionally.
     ParseSequence& skip() {
-        steps_.push_back([](Tokenizer& tok, ParseResult&) -> bool {
+        steps_.push_back([](Tokenizer& tok, ParsedCommand&) -> bool {
             if (tok.more()) tok.next();
             return true;
         });
@@ -109,9 +125,9 @@ public:
     ParseSequence& optional(std::function<void(ParseSequence&)> builder) {
         ParseSequence inner;
         builder(inner);
-        steps_.push_back([inner](Tokenizer& tok, ParseResult& r) mutable -> bool {
+        steps_.push_back([inner](Tokenizer& tok, ParsedCommand& r) mutable -> bool {
             size_t save = tok.getIndex();
-            ParseResult backup = r;
+            ParsedCommand backup = r;
             for (auto& step : inner.steps_) {
                 if (!step(tok, r)) {
                     tok.setIndex(save);
@@ -129,7 +145,7 @@ public:
                          std::function<void(ParseSequence&)> builder) {
         ParseSequence inner;
         builder(inner);
-        steps_.push_back([=](Tokenizer& tok, ParseResult& r) mutable -> bool {
+        steps_.push_back([=](Tokenizer& tok, ParsedCommand& r) mutable -> bool {
             if (!tok.more() || !tok.current().isPunct(open)) {
                 r.fail(std::string("expected '") + open + "'");
                 return false;
@@ -154,7 +170,7 @@ public:
                           std::function<void(ParseSequence&)> builder) {
         ParseSequence inner;
         builder(inner);
-        steps_.push_back([=](Tokenizer& tok, ParseResult& r) mutable -> bool {
+        steps_.push_back([=](Tokenizer& tok, ParsedCommand& r) mutable -> bool {
             auto runInner = [&]() -> bool {
                 for (auto& step : inner.steps_) {
                     if (!step(tok, r)) return false;
@@ -172,7 +188,7 @@ public:
     }
 
     // Execute all steps against the tokenizer. Returns true if all passed.
-    bool run(Tokenizer& tok, ParseResult& r) {
+    bool run(Tokenizer& tok, ParsedCommand& r) {
         for (auto& step : steps_) {
             if (!step(tok, r)) return false;
         }
@@ -180,7 +196,7 @@ public:
     }
 
 private:
-    using Step = std::function<bool(Tokenizer&, ParseResult&)>;
+    using Step = std::function<bool(Tokenizer&, ParsedCommand&)>;
     std::vector<Step> steps_;
 };
 

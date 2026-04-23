@@ -2,6 +2,10 @@
 
 Parse SQL commands. 220 randomized tests. Make them pass.
 
+`DropParser` is provided as an example. Implement `SelectParser`, `InsertParser`, and `CreateParser`.
+
+Use the `ParseSequence` class in `include/ParseSequence.hpp` to describe your grammars declaratively instead of writing manual token-walking loops. You may need to extend `ParseSequence` with your own primitives.
+
 ## Commands
 
 ```sql
@@ -31,6 +35,4 @@ cmake --build build
 
 ## Files
 
-Edit `include/Parsers.hpp`. Everything else is provided.
-
-Use the `ParseSequence` class in `include/ParseSequence.hpp` to build your parsers declaratively. You may need to extend it with your own primitives.
+Edit `include/Parsers.hpp`. You may also add primitives to `include/ParseSequence.hpp`.
