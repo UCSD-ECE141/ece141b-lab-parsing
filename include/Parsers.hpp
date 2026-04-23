@@ -1,5 +1,6 @@
 #pragma once
 #include "Parser.hpp"
+#include "ParseSequence.hpp"
 
 namespace lab {
 
